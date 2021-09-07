@@ -31,16 +31,27 @@ if __name__ == "__main__":
     plt.savefig('log_r.jpg')
 
     # vision space position===============================================
-    plt.figure()
+    fig = plt.figure()
+    plt.scatter(dx[0],dx[1], c='red',label = 'target')
     plt.plot(log_x_array[:,0], log_x_array[:,1],label = 'actual')
-    plt.scatter(dx[0],dx[1], c='red')
     plt.legend()
-    plt.title('vision space trajectory')
+    # plt.title('vision space trajectory')
     plt.xlabel('x (pixel)')
     plt.ylabel('y (pixel)')
-    plt.savefig('log_x.jpg')
+    plt.yticks()
+    plt.savefig('log_x.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
 
-    # joint =================================================
+    # vision space position verse time======================================
+    fig = plt.figure(figsize=(20,8))
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,0]-dx[0],label = 'x')
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,1]-dx[1],label = 'y')
+    plt.legend()
+    # plt.title('vision space error')
+    plt.xlabel('time (s)')
+    plt.ylabel('error (pixel)')
+    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+
+    # joint ============================================================
     plt.figure(figsize=(30,20))
     for j in range(6):
         ax = plt.subplot(3, 2, j+1)

@@ -121,6 +121,7 @@ def main():
     log_theta_k = []
     log_Js_hat = []
     log_x = []
+    log_d = []
     log_q = np.empty([6,0],float)
     log_qdot = np.empty([6,0],float)
     log_rdot = np.empty([6,0],float)
@@ -161,9 +162,9 @@ def main():
         if len(q_now)==0:
             print("can not get q !!!!!")
             continue
-        x_now = vision_reader.pos
+        x_now = vision_reader.pos # x_now is a list
         x = x_now
-        x = np.reshape(x,[2,1])
+        x = np.reshape(x,[2,1]) # x is an 2d array
         k_now = vision_reader.k_pos
 
         # k_now_h = hololens_reader.k_pos
@@ -207,8 +208,7 @@ def main():
                 [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
             theta_k = np.array([[0]]*15)
             for i in range(15):
-                # theta_k[i,0] += random.uniform(-300,300)
-                theta_k[i,0] = theta_k0[i,0]+5
+                theta_k[i,0] = theta_k0[i,0]+10
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
@@ -251,8 +251,8 @@ def main():
 
             # recover z_hat from theta_z
             z_hat = np.dot(np.array([p[0,0],  p[1,0],  p[2,0],  p[0,1],  p[1,1],  p[2,1],  p[0,2],  p[1,2],  p[2,2],  p[0,3],  p[1,3],  p[2,3], 1]), theta_z   )
-            print('p',p)    
-            print('z',z_hat)
+            # print('p',p)    
+            # print('z',z_hat)
 
             log_theta_z.append(list(theta_z))
             log_z_hat.append(list(z_hat))
@@ -260,10 +260,10 @@ def main():
             # recover Js_hat from theta_k
             Js_hat = np.array([[theta_k[0,0]-theta_k[6,0]*x[0,0]+theta_k[9,0], theta_k[1,0]-theta_k[7,0]*x[0,0]+theta_k[10,0], theta_k[2,0]-theta_k[8,0]*x[0,0]+theta_k[11,0]],\
                                                    [theta_k[3,0]-theta_k[6,0]*x[1,0]+theta_k[12,0], theta_k[4,0]-theta_k[7,0]*x[1,0]+theta_k[13,0], theta_k[5,0]-theta_k[8,0]*x[1,0]+theta_k[14,0]]])
-            print('Js_hat',Js_hat)
+            # print('Js_hat',Js_hat)
             Js_hat_inv = np.linalg.pinv(Js_hat)
             Js_ref = Js*1
-            print('Js_ref',Js_ref)
+            # print('Js_ref',Js_ref)
 
             log_theta_k.append(list(theta_k))
             log_Js_hat.append(list(np.reshape(Js_hat,[-1,])))
@@ -280,21 +280,23 @@ def main():
             # truth
             # ut = -np.dot( J_pos_inv, np.dot( Js_inv , np.dot(Kp, (x-dx) ) ) )
             # adaptive
-            ut = -z_hat[0]*np.dot( J_pos_inv, np.dot( Js_hat_inv , np.dot(Kp, (x-dx) ) ) )
+            ut = -z_hat*np.dot( J_pos_inv, np.dot( Js_hat_inv , np.dot(Kp, (x-dx) ) ) )
 
             # 计算un
             if t-t_ready>15 and t-t_ready<16:
-                # d = np.reshape(np.array([-0.2,-0.2,0.2,0.2,0.2,0.1],float),[6,1]  )
-                # un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
+                d = np.reshape(np.array([-0.2,-0.2,0.2,0.2,0.2,0.1],float),[6,1]  )
+                un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
                 # print(un)
                 pass
             else:
+                d = np.zeros([6,1])
                 un = np.zeros([6,1])
             v = ut+un
             v = np.reshape(np.array(v),[-1,])
 
-            # print('v',v.tolist())
+            # print('d',d.reshape([-1,]).tolist())
 
+            log_d.append(d.reshape([-1,]).tolist())
             log_x.append(x.tolist())
             log_q = np.concatenate((log_q,np.reshape(q_now,[6,1])),axis=1)
             log_qdot = np.concatenate((log_qdot,np.reshape(qdot,[6,1])),axis=1)
@@ -327,7 +329,9 @@ def main():
     log_theta_z_array = np.array(log_theta_z)
     log_theta_k_array = np.array(log_theta_k)
     log_z_hat_array = np.array(log_z_hat)
+    log_d_array = np.array(log_d)
 
+    np.save(current_path+ dir+'log_d.npy',log_d_array)
     np.save(current_path+ dir+'log_x.npy',log_x_array)
     np.save(current_path+ dir+'log_q.npy',log_q)
     np.save(current_path+dir+'log_qdot.npy',log_qdot)
@@ -362,6 +366,25 @@ def main():
     plt.xlabel('x (pixel)')
     plt.ylabel('y (pixel)')
     plt.savefig(current_path+ dir+'log_x.jpg')
+
+    # vision space position verse time======================================
+    fig = plt.figure(figsize=(20,8))
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,0]-dx[0],label = 'x')
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,1]-dx[1],label = 'y')
+    plt.legend()
+    # plt.title('vision space error')
+    plt.xlabel('time (s)')
+    plt.ylabel('error (pixel)')
+    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+
+    # intention=========================================================
+    plt.figure()
+    for j in range(log_d_array.shape[1]):
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),log_d_array[:,j],label = 'intention'+str(j+1))
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel(' intention(rad/s)')
+    plt.savefig(current_path+ dir+'log_d.jpg')
 
     # joint space velocity=================================================
     plt.figure(figsize=(30,20))

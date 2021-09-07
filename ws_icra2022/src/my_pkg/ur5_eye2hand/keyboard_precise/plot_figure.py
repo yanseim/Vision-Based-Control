@@ -36,6 +36,16 @@ if __name__ == "__main__":
     plt.ylabel('y (pixel)')
     plt.savefig('log_x.jpg')
 
+    # vision space position verse time======================================
+    fig = plt.figure(figsize=(20,8))
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,0]-dx[0],label = 'x')
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,1]-dx[1],label = 'y')
+    plt.legend()
+    # plt.title('vision space error')
+    plt.xlabel('time (s)')
+    plt.ylabel('error (pixel)')
+    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+
     # joint space velocity=================================================
     plt.figure()
     for j in range(6):

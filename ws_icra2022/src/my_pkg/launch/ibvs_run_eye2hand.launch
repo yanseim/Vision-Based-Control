@@ -18,7 +18,7 @@
     <include file="$(find ros_tcp_endpoint)/launch/endpoint.launch"/>
 
     <!-- start control code -->
-    <node pkg="my_pkg" name="ur_ibvs_node" type="keyboard_precise.py" output="screen" />
+    <node pkg="my_pkg" name="ur_ibvs_node" type="keyboard_adaptive.py" output="screen" />
 
     <!-- start record video -->
     <param name="name" value="point"/>

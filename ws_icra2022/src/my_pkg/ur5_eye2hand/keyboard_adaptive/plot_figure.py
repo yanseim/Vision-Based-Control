@@ -12,6 +12,7 @@ if __name__ == "__main__":
     log_theta_z_array = np.load( 'log_theta_z.npy')
     log_theta_k_array = np.load( 'log_theta_k.npy')
     log_z_hat = np.load( 'log_z_hat.npy')
+    log_d_array = np.load('log_d.npy')
     # log_Js_hat = np.load( 'log_Js_hat.npy')
 
     ros_freq = 30
@@ -41,6 +42,25 @@ if __name__ == "__main__":
     plt.xlabel('x (pixel)')
     plt.ylabel('y (pixel)')
     plt.savefig( 'log_x.jpg')
+
+    # vision space position verse time======================================
+    fig = plt.figure(figsize=(20,8))
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,0]-dx[0],label = 'x')
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,1]-dx[1],label = 'y')
+    plt.legend()
+    # plt.title('vision space error')
+    plt.xlabel('time (s)')
+    plt.ylabel('error (pixel)')
+    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+
+    # intention=========================================================
+    plt.figure()
+    for j in range(log_d_array.shape[1]):
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),log_d_array[:,j],label = 'intention'+str(j+1))
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel(' intention(rad/s)')
+    plt.savefig('log_d.jpg')
 
     # joint space velocity=================================================
     plt.figure(figsize=(30,20))
