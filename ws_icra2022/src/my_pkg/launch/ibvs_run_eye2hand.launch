@@ -1,0 +1,28 @@
+<launch>
+
+    <!-- publish ee to camera calibration -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="base_camera_transform" 
+        args="-0.805286381608 0.84555621915 0.387385523254 -0.106683017487 0.493365293736 -0.241783351084 0.828703947049 base camera_link"/> -->
+
+    <!-- start UR5 robot
+    <include file="$(find my_pkg)/launch/ur5_bringup.launch" >
+    </include> -->
+
+    <!-- start pylon camera -->
+    <include file="$(find pylon_camera)/launch/pylon_camera_node.launch"/>
+
+    <!-- start aruco -->
+    <include file="$(find aruco_ros)/launch/single_pylon.launch"/>
+
+    <!-- start endpoint -->
+    <include file="$(find ros_tcp_endpoint)/launch/endpoint.launch"/>
+
+    <!-- start control code -->
+    <node pkg="my_pkg" name="ur_ibvs_node" type="keyboard_precise.py" output="screen" />
+
+    <!-- start record video -->
+    <param name="name" value="point"/>
+    <node pkg = "my_pkg" name = "image_show_node" type="save_video.py" output="screen"/>
+    
+    
+</launch>

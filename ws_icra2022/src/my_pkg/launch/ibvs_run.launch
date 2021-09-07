@@ -1,0 +1,20 @@
+<launch>
+
+    <!-- publish ee to camera calibration -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_camera_transform" 
+        args="-0.805286381608 0.84555621915 0.387385523254 -0.106683017487 0.493365293736 -0.241783351084 0.828703947049 base camera_link"/>
+
+    <!-- start UR5 robot
+    <include file="$(find my_pkg)/launch/ur5_bringup.launch" >
+    </include> -->
+
+    <!-- start aruco -->
+    <include file="$(find aruco_ros)/launch/single_pylon.launch"/>
+
+    <!-- start basler -->
+    <include file="$(find pylon)camera)/launch/pylon_camera_node.launch"/>
+
+    <!-- start control code -->
+    <node pkg="my_pkg" name="ur_ibvs_node" type="ibvs_with_hololens.py" output="screen" />
+    
+</launch>
