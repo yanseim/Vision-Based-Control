@@ -26,6 +26,8 @@ from pykdl_utils.kdl_kinematics import KDLKinematics
 
 import os
 
+import random
+
 def change_angle_to_pi(qangle):
     temp=[]
     for i in range(len(qangle)):
@@ -103,6 +105,7 @@ def main():
     # initial_state=[0,-1.57,0,0,3.14,0.25]
     # initial_state=[-3.75,-89.27,-88.4,-90,90,1.34]# 单位是角度deg
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg
+    initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
     # camera intrinsic parameters
@@ -139,6 +142,10 @@ def main():
     Cd = np.eye(6)
     L_z = 0.00002*np.eye(13)
     L_k = 0.00002*np.eye(15)# ======================步长是调好的，不能再大了
+    L_z = 0.00001*np.eye(13)
+    L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
+    # L_z = 0.0*np.eye(13)
+    # L_k = 0.0*np.eye(15)# ======================步长是调好的，不能再大了
 
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
@@ -183,18 +190,21 @@ def main():
 
 
         # 给指令
-        if flag_initialized==0:# 先回到初始位置，movej的t参数是不需要的，这里给0 
+        if flag_initialized==0:# 先回到初始位置，movej的t参数是不需要的，这里给0 ==================
             moveur(pub,initial_state,5,0.3,0)
             time.sleep(5)
             flag_initialized=1
-        elif flag_initialized==1:
+
+        elif flag_initialized==1:# ============================================================
             flag_initialized=2
             print("initialization is done! the time is:", t-t_start)
             t_ready = t
 
             # theta_z = -np.ones([13,1])
-            theta_z = 13*[0]
-            theta_z[-4:] = [6.78457138e-01,-7.34604865e-01,-7.18357448e-03,0.9]
+            theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+
+            # theta_z[-4:] = [6.78457138e-01,-7.34604865e-01,-7.18357448e-03,0.9]
+            theta_z[-4:] = [ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
             theta_z = np.reshape(np.array(theta_z),[13,1])
 
             RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
@@ -206,24 +216,22 @@ def main():
             v00 = 551
             theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
                 [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
-            theta_k = np.array([[0]]*15)
+            theta_k = np.array([[0.0] for i in range(15)])
             for i in range(15):
-                theta_k[i,0] = theta_k0[i,0]+10
+                theta_k[i,0] = theta_k0[i,0]*random.uniform(0.8,1.2)
+                # theta_k[i,0] = theta_k0[i,0]
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
-        elif flag_initialized==2  and t-t_ready<20:# 
+        elif flag_initialized==2  and t-t_ready<20:# ===========================================
 
             # 计算视觉矩阵Js
             u = x_now[0]-u0
             v = x_now[1]-v0
             z = 1 # =========================
-            Js = np.array([      [fx/z, 0, -u/z]     , [0, fy/z, -v/z]    ])
-            RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
-                                            [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
-                                            [-5.77950645e-03, -9.99957496e-01, -7.18357448e-03]]) # 相机相对于base的旋转矩阵,要转置成base相对于相机才对
-            Js = np.dot(Js,RR.T)
-            # print(Js)
+            Js = np.array([      [fx/z, 0.0, -u/z]     , [0.0, fy/z, -v/z]    ])
+            Js = np.dot(Js,RR)
+            # print('Js is :',Js)
             Js_inv = np.linalg.pinv(Js)
 
             # 图像空间速度
@@ -260,10 +268,10 @@ def main():
             # recover Js_hat from theta_k
             Js_hat = np.array([[theta_k[0,0]-theta_k[6,0]*x[0,0]+theta_k[9,0], theta_k[1,0]-theta_k[7,0]*x[0,0]+theta_k[10,0], theta_k[2,0]-theta_k[8,0]*x[0,0]+theta_k[11,0]],\
                                                    [theta_k[3,0]-theta_k[6,0]*x[1,0]+theta_k[12,0], theta_k[4,0]-theta_k[7,0]*x[1,0]+theta_k[13,0], theta_k[5,0]-theta_k[8,0]*x[1,0]+theta_k[14,0]]])
-            # print('Js_hat',Js_hat)
+            print('Js_hat',Js_hat)
             Js_hat_inv = np.linalg.pinv(Js_hat)
             Js_ref = Js*1
-            # print('Js_ref',Js_ref)
+            print('Js_ref',Js_ref)
 
             log_theta_k.append(list(theta_k))
             log_Js_hat.append(list(np.reshape(Js_hat,[-1,])))
@@ -280,11 +288,12 @@ def main():
             # truth
             # ut = -np.dot( J_pos_inv, np.dot( Js_inv , np.dot(Kp, (x-dx) ) ) )
             # adaptive
-            ut = -z_hat*np.dot( J_pos_inv, np.dot( Js_hat_inv , np.dot(Kp, (x-dx) ) ) )
+            ut = -z_hat[0]*np.dot( J_pos_inv, np.dot( Js_hat_inv , np.dot(Kp, (x-dx) ) ) )
 
             # 计算un
             if t-t_ready>15 and t-t_ready<16:
-                d = np.reshape(np.array([-0.2,-0.2,0.2,0.2,0.2,0.1],float),[6,1]  )
+                # d = np.reshape(np.array([-0.2,-0.2,0.2,0.2,0.2,0.1],float),[6,1]  )
+                d = np.zeros([6,1]) # 先不要d了
                 un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
                 # print(un)
                 pass

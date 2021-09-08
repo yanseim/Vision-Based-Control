@@ -182,27 +182,28 @@ def main():
             flag_initialized=2
             print("initialization is done! the time is:", t-t_start)
             t_ready = t
+           RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
+                                            [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
+                                            [-5.77950645e-03, -9.99957496e-01, -7.18357448e-03]]) # 相机相对于base的旋转矩阵,要转置成base相对于相机才对
+            RR = RR.T
+            f = 2340
+            u00 = 753
+            v00 = 551
+            x = np.reshape(x,[2,1])
+            theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
+                [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
+            theta_k = theta_k0
+
         elif flag_initialized==2  and t-t_ready<20:# 
             # 计算视觉矩阵Js
             u = x[0]-u0
             v = x[1]-v0
             z = 1 # =========================
             Js = np.array([      [fx/z, 0, -u/z]     , [0, fy/z, -v/z]    ])
-            RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
-                                            [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
-                                            [-5.77950645e-03, -9.99957496e-01, -7.18357448e-03]]) # 相机相对于base的旋转矩阵,要转置成base相对于相机才对
-            Js = np.dot(Js,RR.T)
+            Js = np.dot(Js,RR)
             print('J_s',Js)
             Js_inv = np.linalg.pinv(Js)
 
-            f = 2340
-            u00 = 753
-            v00 = 551
-            RR = RR.T
-            x = np.reshape(x,[2,1])
-            theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
-                [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
-            theta_k = theta_k0
             Js_hat = np.array([[theta_k[0,0]-theta_k[6,0]*x[0,0]+theta_k[9,0], theta_k[1,0]-theta_k[7,0]*x[0,0]+theta_k[10,0], theta_k[2,0]-theta_k[8,0]*x[0,0]+theta_k[11,0]],\
                                                             [theta_k[3,0]-theta_k[6,0]*x[1,0]+theta_k[12,0], theta_k[4,0]-theta_k[7,0]*x[1,0]+theta_k[13,0], theta_k[5,0]-theta_k[8,0]*x[1,0]+theta_k[14,0]]])
             print('Js_hat',Js_hat)

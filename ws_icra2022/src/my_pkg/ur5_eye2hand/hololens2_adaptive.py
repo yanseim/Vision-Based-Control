@@ -25,6 +25,8 @@ from pykdl_utils.kdl_kinematics import KDLKinematics
 
 import os
 
+import random
+
 def change_angle_to_pi(qangle):
     temp=[]
     for i in range(len(qangle)):
@@ -115,6 +117,8 @@ def main():
     flag_initialized = 0
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg # 0904前
     # initial_state=[141.44,-96.23, -94.76, 19.88, 79.35, 146.93]# 单位是角度deg
+    initial_state=[115.22,-111.13, -76.87, -11.38, 68.65, 146.93]# 0907挪位置了=====================================
+    initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]
 
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
@@ -134,6 +138,7 @@ def main():
     log_theta_k = []
     log_Js_hat = []
     log_x = []
+    log_d = []
     log_q = np.empty([6,0],float)
     log_qdot = np.empty([6,0],float)
     log_rdot = np.empty([6,0],float)
@@ -147,10 +152,10 @@ def main():
     dr = np.reshape([0.476,-0.140, 0.451],[3,1])
     drdot = np.zeros([3,1])
     
-    Kp = 5*np.eye(2)
+    Kp = 2*np.eye(2)
     Cd = np.eye(6)
-    L_z = 0.00002*np.eye(13)
-    L_k = 0.00002*np.eye(15)# ======================步长是调好的，不能再大了
+    L_z = 0.00001*np.eye(13)
+    L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
 
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
@@ -229,8 +234,8 @@ def main():
             t_ready = t
 
             # theta_z = -np.ones([13,1])
-            theta_z = 13*[0]
-            theta_z[-4:] = [6.78457138e-01,-7.34604865e-01,-7.18357448e-03,0.9]
+            theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+            theta_z[-4:] =[ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
             theta_z = np.reshape(np.array(theta_z),[13,1])
 
             RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
@@ -242,10 +247,10 @@ def main():
             v00 = 551
             theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
                 [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
-            theta_k = np.array([[0]]*15)
+            theta_k = np.array([[0.0] for i in range(15)])
             for i in range(15):
                 # theta_k[i,0] += random.uniform(-300,300)
-                theta_k[i,0] = theta_k0[i,0]+5
+                theta_k[i,0] = theta_k0[i,0]*random.uniform(0.8,1.2)
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
@@ -337,6 +342,7 @@ def main():
             # print('v',v.tolist())
 
             log_x.append(x.tolist())
+            log_d.append(d.reshape([-1,]).tolist())
             log_q = np.concatenate((log_q,np.reshape(q_now,[6,1])),axis=1)
             log_qdot = np.concatenate((log_qdot,np.reshape(qdot,[6,1])),axis=1)
             log_dqdot = np.concatenate((log_dqdot,np.reshape(v,[6,1])),axis=1)
@@ -368,7 +374,9 @@ def main():
     log_theta_z_array = np.array(log_theta_z)
     log_theta_k_array = np.array(log_theta_k)
     log_z_hat_array = np.array(log_z_hat)
+    log_d_array = np.array(log_d)
 
+    np.save(current_path+ dir+'log_d.npy',log_d_array)
     np.save(current_path+ dir+'log_x.npy',log_x_array)
     np.save(current_path+ dir+'log_q.npy',log_q)
     np.save(current_path+dir+'log_qdot.npy',log_qdot)
@@ -404,6 +412,25 @@ def main():
     plt.ylabel('y (pixel)')
     plt.savefig(current_path+ dir+'log_x.jpg')
 
+    # vision space position verse time======================================
+    fig = plt.figure(figsize=(20,8))
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,0]-dx[0],label = 'x')
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,1]-dx[1],label = 'y')
+    plt.legend()
+    # plt.title('vision space error')
+    plt.xlabel('time (s)')
+    plt.ylabel('error (pixel)')
+    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+
+    # intention=========================================================
+    plt.figure()
+    for j in range(log_d_array.shape[1]):
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),log_d_array[:,j],label = 'intention'+str(j+1))
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel(' intention(rad/s)')
+    plt.savefig(current_path+ dir+'log_d.jpg')
+
     # joint =================================================
     plt.figure(figsize=(30,20))
     for j in range(6):
@@ -412,7 +439,8 @@ def main():
         plt.xlabel('time (s)')
         plt.ylabel('angle (rad)')
         if j==4:
-            plt.ylim([1.2,1.5])
+            # plt.ylim([1.2,1.5])
+            pass
         elif j==5:
             plt.ylim([2.4,2.7])
 

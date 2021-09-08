@@ -25,6 +25,8 @@ from pykdl_utils.kdl_parser import kdl_tree_from_urdf_model
 from pykdl_utils.kdl_kinematics import KDLKinematics
 import os
 
+import random
+
 def change_angle_to_pi(qangle):
     temp=[]
     for i in range(len(qangle)):
@@ -74,8 +76,20 @@ def get_jacobian_from_joint(urdfname,jointq,flag):
     #print 'J:', J
     return J,pose
 
+def get_jacobian_for_hololens(urdfname,jointq,flag):
+    robot = URDF.from_xml_file(urdfname)
+    kdl_kin = KDLKinematics(robot, "base_link", "forearm_link")
+    J1 = kdl_kin.jacobian(jointq[:3])
+    J1[0,:],J1[1,:],J1[3,:],J1[4,:]  = -J1[0,:],-J1[1,:],-J1[3,:],-J1[4,:] # added on 0728 yxj
+    # print 'J:', J
+    kdl_kin = KDLKinematics(robot, "base_link", "wrist_1_link")
+    J2 = kdl_kin.jacobian(jointq[:4])
+    J2[0,:],J2[1,:],J2[3,:],J2[4,:]  = -J2[0,:],-J2[1,:],-J2[3,:],-J2[4,:] # added on 0728 yxj
+    return J1,J2
+
+
 def main():
-    time.sleep(0.4) # 要写到launch文件里，必须先停一会儿才不会让这个node die
+    time.sleep(0.8) # 要写到launch文件里，必须先停一会儿才不会让这个node die
 
     dir = '/hololens_adaptive_circle/'
     current_path = os.path.dirname(__file__)
@@ -102,6 +116,7 @@ def main():
     # initial_state=[0,-1.57,0,0,3.14,0.25]
     # initial_state=[-3.75,-89.27,-88.4,-90,90,1.34]# 单位是角度deg
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg
+    initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
     # camera intrinsic parameters
@@ -120,6 +135,7 @@ def main():
     log_theta_k = []
     log_Js_hat = []
     log_x = []
+    log_d = []
     log_dx = []
     log_q = np.empty([6,0],float)
     log_qdot = np.empty([6,0],float)
@@ -136,8 +152,8 @@ def main():
     
     Kp = 2*np.eye(2)
     Cd = np.eye(6)
-    L_z = 0.001*np.eye(13)
-    L_k = 0.001*np.eye(15)
+    L_z = 0.00001*np.eye(13)
+    L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
 
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
@@ -192,8 +208,10 @@ def main():
             t_ready = t
 
             # theta_z = -np.ones([13,1])
-            theta_z = 13*[0]
-            theta_z[-4:] = [6.78457138e-01,-7.34604865e-01,-7.18357448e-03,0.9]
+            theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+
+            # theta_z[-4:] = [6.78457138e-01,-7.34604865e-01,-7.18357448e-03,0.9]
+            theta_z[-4:] = [ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
             theta_z = np.reshape(np.array(theta_z),[13,1])
 
             RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
@@ -203,14 +221,16 @@ def main():
             f = 2340
             u00 = 753
             v00 = 551
-            theta_k = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
+            theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
                 [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
+            theta_k = np.array([[0.0] for i in range(15)])
             for i in range(15):
-                # theta_k[i,0] += random.uniform(-300,300)
-                theta_k[i,0] *= 1
+                theta_k[i,0] = theta_k0[i,0]*random.uniform(0.8,1.2)
+                # theta_k[i,0] = theta_k0[i,0]
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
-        elif flag_initialized==2  and t-t_ready<30:# 
+
+        elif flag_initialized==2  and t-t_ready<300:# 
 
             # 计算视觉矩阵Js
             u = x_now[0]-u0
@@ -298,6 +318,7 @@ def main():
             # print('v',v.tolist())
 
             log_x.append(x.tolist())
+            log_d.append(d.reshape([-1,]).tolist())
             log_dx.append(dx.tolist())
             log_q = np.concatenate((log_q,np.reshape(q_now,[6,1])),axis=1)
             log_qdot = np.concatenate((log_qdot,np.reshape(qdot,[6,1])),axis=1)
@@ -331,11 +352,13 @@ def main():
 
     # print(np.shape(log_qdot))
     log_x_array = np.array(log_x)
+    log_d_array = np.array(log_d)
     log_dx_array = np.array(log_dx)
     log_theta_z_array = np.array(log_theta_z)
     log_theta_k_array = np.array(log_theta_k)
     log_z_hat_array = np.array(log_z_hat)
 
+    np.save(current_path+ dir+'log_d.npy',log_d_array)
     np.save(current_path+ dir+'log_x.npy',log_x_array)
     np.save(current_path+ dir+'log_dx.npy',log_dx_array)
     np.save(current_path+ dir+'log_q.npy',log_q)
@@ -371,6 +394,25 @@ def main():
     plt.xlabel('x (pixel)')
     plt.ylabel('y (pixel)')
     plt.savefig(current_path+ dir+'log_x.jpg')
+
+    # vision space position verse time======================================
+    fig = plt.figure(figsize=(20,8))
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,0]-dx[0],label = 'x')
+    plt.plot(np.linspace(0,np.shape(log_rdot)[1]/ros_freq,np.shape(log_rdot)[1]), log_x_array[:,1]-dx[1],label = 'y')
+    plt.legend()
+    # plt.title('vision space error')
+    plt.xlabel('time (s)')
+    plt.ylabel('error (pixel)')
+    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+
+    # intention=========================================================
+    plt.figure()
+    for j in range(log_d_array.shape[1]):
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),log_d_array[:,j],label = 'intention'+str(j+1))
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel(' intention(rad/s)')
+    plt.savefig(current_path+ dir+'log_d.jpg')
 
     # joint space velocity=================================================
     plt.figure(figsize=(30,20))
