@@ -15,7 +15,7 @@
     <include file="$(find aruco_ros)/launch/single_pylon.launch"/>
 
     <!-- start endpoint -->
-    <include file="$(find ros_tcp_endpoint)/launch/endpoint.launch"/>
+    <!-- <include file="$(find ros_tcp_endpoint)/launch/endpoint.launch"/> -->
 
     <!-- start control code -->
     <node pkg="my_pkg" name="ur_ibvs_node" type="hololens2_adaptive_circle.py" output="screen" />
