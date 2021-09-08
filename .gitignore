@@ -33,3 +33,8 @@
 
 # macOS system files
 .DS_Store
+
+# ubuntu
+*.avi
+ws_icra2022/devel
+ws_icra2022/build
