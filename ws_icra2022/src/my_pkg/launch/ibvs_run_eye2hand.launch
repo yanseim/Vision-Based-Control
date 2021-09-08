@@ -18,11 +18,11 @@
     <include file="$(find ros_tcp_endpoint)/launch/endpoint.launch"/>
 
     <!-- start control code -->
-    <node pkg="my_pkg" name="ur_ibvs_node" type="hololens_adaptive_circle.py" output="screen" />
+    <node pkg="my_pkg" name="ur_ibvs_node" type="hololens2_adaptive_circle.py" output="screen" />
 
     <!-- start record video -->
-    <!-- <param name="name" value="point"/>
-    <node pkg = "my_pkg" name = "image_show_node" type="save_video.py" output="screen"/> -->
+    <param name="name" value="circle"/>
+    <node pkg = "my_pkg" name = "image_show_node" type="save_video.py" output="screen"/> 
     
     
 </launch>

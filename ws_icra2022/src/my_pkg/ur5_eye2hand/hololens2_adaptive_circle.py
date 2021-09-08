@@ -91,8 +91,9 @@ def get_jacobian_for_hololens(urdfname,jointq,flag):
 def main():
     time.sleep(0.8) # 要写到launch文件里，必须先停一会儿才不会让这个node die
 
-    dir = '/hololens_adaptive_circle/'
+    dir = '/hololens2_adaptive_circle/'
     current_path = os.path.dirname(__file__)
+    urdf =  current_path+"/../urdf/ur5.urdf"
 
     rospy.init_node("move_ur5_by_urscript")
     pub=rospy.Publisher("/ur_hardware_interface/script_command",String,queue_size=10) # the subscriber is in ur5_bringup.launch
@@ -108,6 +109,8 @@ def main():
     ur_sub = rospy.Subscriber("/joint_states", JointState, ur_reader.callback)
     hololens_reader = HololensPosition()
     sub = rospy.Subscriber("UnityJointStatePublish", JointState, hololens_reader.callback)
+    sub2 = rospy.Subscriber("UnityJoint3ManipPublish", PointStamped, hololens_reader.callback2)
+    sub3 = rospy.Subscriber("UnityJoint4ManipPublish", PointStamped, hololens_reader.callback3)
 
     pos1_flag = 0
     pos2_flag = 0
@@ -117,6 +120,8 @@ def main():
     # initial_state=[-3.75,-89.27,-88.4,-90,90,1.34]# 单位是角度deg
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg
     initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
+    initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1
+    initial_state=[104.92,-176.24, 29.50, -12.88, 68.61, 146.93]# 0908 experiment2
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
     # camera intrinsic parameters
@@ -182,11 +187,30 @@ def main():
         k_now = vision_reader.k_pos
 
         k_now_h = hololens_reader.k_pos
-        d = hololens_reader.pos
-        d = [0,0,0,0,0,0]
+        d_slider = hololens_reader.pos
+        d_slider = np.array(d_slider)
+
+        joint3pos_my = []
+        joint3pos_my = hololens_reader.joint3pos
+        joint4pos_my = []
+        joint4pos_my = hololens_reader.joint4pos
         
+        J1,J2 = get_jacobian_for_hololens(urdf,q_now,0)
+        print('J1',J1)
+        J1_3_dimension = J1[0:3,:]
+        d1_3_dimension = np.dot(np.linalg.pinv(J1_3_dimension),joint3pos_my.reshape([3,1]))
+        d1_3_dimension = np.asarray(d1_3_dimension).reshape(-1)
+        d = np.concatenate((d1_3_dimension,np.array([0,0,0])),axis=0)
+        print("d1----------------------",d)
+
+        J2_3_dimension = J2[0:3,:]
+        d2_3_dimension = np.dot(np.linalg.pinv(J2_3_dimension),joint4pos_my.reshape([3,1]))
+        d2_3_dimension = np.asarray(d2_3_dimension).reshape(-1)
+        d = d + np.concatenate((d2_3_dimension,np.array([0,0])),axis=0) + d_slider
+
+        print('d======================', d)
+
         # 计算雅可比矩阵 J
-        urdf =  current_path+"/../urdf/ur5.urdf"
         J,p = get_jacobian_from_joint(urdf,q_now,0)
         J_inv = np.linalg.pinv(J)
         J_ori_inv = np.linalg.pinv(J[3:6,:]) # only compute orientation!!
@@ -271,7 +295,7 @@ def main():
             z_hat = np.dot(np.array([p[0,0],  p[1,0],  p[2,0],  p[0,1],  p[1,1],  p[2,1],  p[0,2],  p[1,2],  p[2,2],  p[0,3],  p[1,3],  p[2,3], 1]), theta_z   )
             # print('p',p)    
             # print('theta_z',theta_z)
-            print('z',z_hat)
+            # print('z',z_hat)
 
             log_theta_z.append(list(theta_z))
             log_z_hat.append(list(z_hat))
@@ -302,14 +326,8 @@ def main():
             ut = -z_hat[0]*np.dot( J_pos_inv, np.dot( Js_hat_inv , np.dot(Kp, (x-dx) ) ) )
             # v = np.dot(N_ori,v)
 
-            # 计算un
-            # if t-t_ready>25 and t-t_ready<26:
-            #     d = np.reshape(np.array([-0.2,-0.2,0.2,0.2,0.2,0.1],float),[6,1]  )
-            #     un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
-            #     # print(un)
-            # else:
-            #     un = np.zeros([6,1])
-            un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
+            d_array = np.reshape(d,[6,1])
+            un = np.dot(N_pos, np.dot(np.linalg.inv(Cd), d_array)  ) 
             un = np.reshape(un,[6,1])
             # print('un',un)
             v = ut+un
