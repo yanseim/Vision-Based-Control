@@ -35,9 +35,10 @@ class ImageShow(object):
         if self.name =="point":
             cv2.circle(self.img, (720,540), 40,(0,0,255),-1)
         elif self.name =="circle":
-            self.circle_list.append(self.pos)
-            for center in self.circle_list:
-                cv2.circle(self.img,center, 15,(0,0,255),-1)
+            # self.circle_list.append(self.pos)
+            # for center in self.circle_list:
+            #     cv2.circle(self.img,center, 30,(0,0,255),-1)
+            cv2.circle(self.img,(720,540), 100,(0,0,255),thickness=10)
 
     def callback2(self,data):
         self.pos = (int(data.point.x),int(data.point.y))
