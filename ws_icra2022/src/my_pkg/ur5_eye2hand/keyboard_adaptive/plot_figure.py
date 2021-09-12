@@ -1,4 +1,5 @@
 
+from operator import truediv
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,9 +12,12 @@ if __name__ == "__main__":
     log_dqdot = np.load('log_dqdot.npy')
     log_theta_z_array = np.load( 'log_theta_z.npy')
     log_theta_k_array = np.load( 'log_theta_k.npy')
-    log_z_hat = np.load( 'log_z_hat.npy')
+    log_z_hat_array = np.load( 'log_z_hat.npy')
     log_d_array = np.load('log_d.npy')
     # log_Js_hat = np.load( 'log_Js_hat.npy')
+    log_actual_z_array = np.load('log_actual_z.npy',allow_pickle=True)
+
+    print(log_actual_z_array)
 
     ros_freq = 30
     dx = np.array([[720],[540]])
@@ -77,12 +81,14 @@ if __name__ == "__main__":
 
     # z_hat=================================================
     plt.figure()
-    plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]), log_z_hat[:],label = 'z_hat')
+    plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]), np.reshape(log_z_hat_array,[-1,]),label = 'z_hat')
+    plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]), np.reshape(log_actual_z_array,[-1,]),label = 'z_actual')
     plt.legend()
     plt.title('z_hat')
     plt.xlabel('time (s)')
     plt.ylabel('depth (m)')
-    plt.savefig( 'z_hat.jpg')
+    plt.savefig('z_hat.jpg')
+
     # theta_k========================================
     plt.figure()
     for j in range(15):
