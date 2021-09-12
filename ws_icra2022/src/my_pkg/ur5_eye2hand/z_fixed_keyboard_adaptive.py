@@ -142,10 +142,10 @@ def main():
     dr = np.reshape([0.476,-0.140, 0.451],[3,1])
     drdot = np.zeros([3,1])
     
-    Kp = 2*np.eye(2)
+    Kp = 1*np.eye(2)
     Cd = np.eye(6)
-    L_z = 0.001
-    L_k = 0.001# ======================步长是调好的，不能再大了
+    L_z = 0.002
+    L_k = 0.0001*np.eye(4)# ======================步长是调好的，不能再大了
     # L_z = 0.000015*np.eye(13)
     # L_k = 0.000015*np.eye(15)# ======================步长是调好的，不能再大了
 
@@ -155,7 +155,7 @@ def main():
     x_last = vision_reader.pos
     k_last = vision_reader.k_pos
     # k_last_h = hololens_reader.k_pos
-    time.sleep(0.3)
+    time.sleep(0.5)
     t_start = time.time()
     t_last = t_start
     t_ready = t_start
@@ -184,14 +184,14 @@ def main():
         # 计算雅可比矩阵 J
         urdf =  current_path+"/../urdf/ur5.urdf"
         J,p = get_jacobian_from_joint(urdf,q_now,0)
-        print('p======================',p)
+        J = J[:,[1,2,3]]
         J_inv = np.linalg.pinv(J)
         J_ori_inv = np.linalg.pinv(J[3:6,:]) # only compute orientation!!
         J_pos_inv = np.linalg.pinv(J[0:3,:])
         # print(J_inv)
-        N = np.eye(6)-np.dot(J_inv,J)
-        N_ori = np.eye(6)-np.dot(J_ori_inv,J[3:6,:])
-        N_pos = np.eye(6)-np.dot(J_pos_inv,J[0:3,:])
+        # N = np.eye(6)-np.dot(J_inv,J)
+        # N_ori = np.eye(6)-np.dot(J_ori_inv,J[3:6,:])
+        # N_pos = np.eye(6)-np.dot(J_pos_inv,J[0:3,:])
 
 
         # 给指令
@@ -206,8 +206,16 @@ def main():
             t_ready = t
 
             # theta_z = -np.ones([13,1])
-            theta_z = 1.0
-            theta_k = 2340
+            theta_z = 0.2
+
+            RR = np.array([[-0.99884559,  0.02652412,  0.04004957],
+                                        [-0.04070438, -0.02462568, -0.99886772],
+                                        [-0.02550784, -0.99934481,  0.0256769 ]])
+            RR = RR.T
+            # theta_k = 2340*np.array( [  [RR[0,0]] , [RR[0,1]] , [RR[1,0]] , [RR[1,1]] ]  )
+            theta_k = 2340*np.array( [  [RR[0,0]]  ,[RR[0,2]] , [RR[1,0]] , [RR[1,2]] ]  )
+
+
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
@@ -229,10 +237,9 @@ def main():
             # 末端位置
             r4 = np.dot(p, [[0],[0],[0],[1]])
             r = r4[0:3]
-            print('r is:::::::::::::::::::::::::::::::::::::::::::::::::::::',r)
 
             # 末端速度
-            rdot = np.dot(J , np.reshape(qdot,[6,1]))# rdot是个matrix!   np.dot的输出是matrix
+            rdot = np.dot(J , np.reshape(qdot[1:4],[3,1]))# rdot是个matrix!   np.dot的输出是matrix
             # print(type(rdot))
 
             # 计算深度自适应矩阵
@@ -240,27 +247,27 @@ def main():
             # print('Yz',Y_z)
             
             # 计算相机参数自适应矩阵
-            Y_k = np.array([[rdot[0]],[rdot[1]]])
+            # Y_k = np.array([[rdot[0,0], rdot[1,0], 0, 0],[0,0,rdot[0,0], rdot[1,0]]])
+            Y_k = np.array([[rdot[0,0], rdot[2,0],0,0],[0,0,rdot[0,0], rdot[2,0]]])
             # print('Yk',Y_k)
 
             # recover z_hat from theta_z
-
             z_hat = theta_z
             # print('p',p)    
             # print('z',z_hat)
 
-            log_theta_z.append(list(theta_z))
-            log_z_hat.append(list(z_hat))
+            log_theta_z.append(theta_z)
+            log_z_hat.append(z_hat)
             log_actual_z.append(actual_z)
 
             # recover Js_hat from theta_k
-            Js_hat = np.array([[theta_k, 0],[0, theta_k]])
+            Js_hat = np.array([  [theta_k[0,0] ,0,  theta_k[1,0] ],     [theta_k[2,0],  0,  theta_k[3,0]]    ])
             print('Js_hat',Js_hat)
             Js_hat_inv = np.linalg.pinv(Js_hat)
-            Js_ref = Js*1
+            Js_ref = Js*1.42
             print('Js_ref',Js_ref)
 
-            log_theta_k.append(list(theta_k))
+            log_theta_k.append(theta_k)
             log_Js_hat.append(list(np.reshape(Js_hat,[-1,])))
             
 
@@ -270,6 +277,7 @@ def main():
             theta_z = theta_z+theta_z_dot
             theta_k_dot = 1/z_hat*np.dot(L_k, np.dot(Y_k.T, (x-dx)))/ros_freq
             theta_k = theta_k+theta_k_dot
+            theta_z = theta_z[0,0]
 
             # 计算ut=================================
             # truth
@@ -281,13 +289,18 @@ def main():
             if t-t_ready>15 and t-t_ready<16:
                 # d = np.reshape(np.array([-0.2,-0.2,0.2,0.2,0.2,0.1],float),[6,1]  )
                 d = np.zeros([6,1]) # 先不要d了
-                un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
+                # un = -np.dot(N_pos, np.dot(np.linalg.inv(Cd), d)  ) 
                 # print(un)
                 pass
             else:
                 d = np.zeros([6,1])
                 un = np.zeros([6,1])
-            v = ut+un
+            v = ut # ut是3*1
+            print('v',v)
+            v = np.vstack((0,v))
+            v = np.vstack((v,[[0],[0]]))
+            print('v',v)
+
             v = np.reshape(np.array(v),[-1,])
 
             # print('d',d.reshape([-1,]).tolist())
@@ -399,7 +412,7 @@ def main():
 
     # theta_k========================================
     plt.figure()
-    for j in range(15):
+    for j in range(4):
         lab = r'$\theta_k('+str(j+1)+')$'
         plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_theta_k_array[:,j]-log_theta_k_array[0,j],label = lab)
         plt.xlabel('time (s)')
@@ -409,9 +422,9 @@ def main():
 
     # theta_z========================================
     plt.figure()
-    for j in range(13):
+    for j in range(1):
         lab = r'$\theta_z('+str(j+1)+')$'
-        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_theta_z_array[:,j]-log_theta_z_array[0,j],label = lab)
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_theta_z_array[:]-log_theta_z_array[0],label = lab)
         plt.xlabel('time (s)')
         plt.title(r'elements of $\hat \theta_z$')
         plt.legend()
