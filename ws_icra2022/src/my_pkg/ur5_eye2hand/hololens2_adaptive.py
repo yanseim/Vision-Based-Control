@@ -13,6 +13,7 @@ from std_msgs.msg import String
 import time
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import Vector3Stamped
 from ur5_pose_get import *
 from vision_pose_get import VisionPosition
 from hololens_reader import HololensPosition
@@ -104,6 +105,7 @@ def main():
 
     vision_reader = VisionPosition()
     vision_sub = rospy.Subscriber("/aruco_single/pixel", PointStamped, vision_reader.callback)
+    actual_z_sub = rospy.Subscriber("/aruco_single/position", Vector3Stamped, vision_reader.callback_actual_z)
     ur_reader = Urposition()
     ur_sub = rospy.Subscriber("/joint_states", JointState, ur_reader.callback)
     hololens_reader = HololensPosition()
@@ -117,8 +119,8 @@ def main():
     flag_initialized = 0
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg # 0904前
     # initial_state=[141.44,-96.23, -94.76, 19.88, 79.35, 146.93]# 单位是角度deg
-    initial_state=[115.22,-111.13, -76.87, -11.38, 68.65, 146.93]# 0907挪位置了=====================================
-    initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1
+    # initial_state=[115.22,-111.13, -76.87, -11.38, 68.65, 146.93]# 0907挪位置了=====================================
+    initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1-
 
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
@@ -135,8 +137,10 @@ def main():
     qdot = np.zeros([6,1],float)
     log_theta_z = []
     log_z_hat = []
+    log_actual_z = []
     log_theta_k = []
     log_Js_hat = []
+    log_Js_ref = []
     log_x = []
     log_d = []
     log_q = np.empty([6,0],float)
@@ -152,11 +156,20 @@ def main():
     dr = np.reshape([0.476,-0.140, 0.451],[3,1])
     drdot = np.zeros([3,1])
     
+    # Kp = 2*np.eye(2)
+    # Cd = np.eye(6)
+    # L_z = 0.00001*np.eye(13)
+    # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
     Kp = 2*np.eye(2)
     Cd = np.eye(6)
-    L_z = 0.00001*np.eye(13)
-    L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
-
+    # L_z = 0.00003*np.eye(13)
+    # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
+    # L_z = 0.0003*np.diag([1,1,1,1,1,1,1,1,1,1,1,1,1.2])
+    # L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
+    # L_z = 0.0000*np.diag([1,1,1,1,1,1,1,1,1,1,1,1,1.2])
+    # L_k = 0.000*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
+    L_z = 0.0003*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,2.5])
+    L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
     q_last=ur_reader.now_ur_pos
@@ -186,6 +199,7 @@ def main():
         x = x_now
         x = np.reshape(x,[2,1])
         k_now = vision_reader.k_pos
+        actual_z = vision_reader.actual_z
 
         k_now_h = hololens_reader.k_pos
         d_slider = hololens_reader.pos
@@ -197,19 +211,19 @@ def main():
         joint4pos_my = hololens_reader.joint4pos
 
         J1,J2 = get_jacobian_for_hololens(urdf,q_now,0)
-        print('J1',J1)
+        # print('J1',J1)
         J1_3_dimension = J1[0:3,:]
         d1_3_dimension = np.dot(np.linalg.pinv(J1_3_dimension),joint3pos_my.reshape([3,1]))
         d1_3_dimension = np.asarray(d1_3_dimension).reshape(-1)
         d = np.concatenate((d1_3_dimension,np.array([0,0,0])),axis=0)
-        print("d1----------------------",d)
+        # print("d1----------------------",d)
 
         J2_3_dimension = J2[0:3,:]
         d2_3_dimension = np.dot(np.linalg.pinv(J2_3_dimension),joint4pos_my.reshape([3,1]))
         d2_3_dimension = np.asarray(d2_3_dimension).reshape(-1)
         d = d + np.concatenate((d2_3_dimension,np.array([0,0])),axis=0) + d_slider
 
-        print('d======================', d)
+        # print('d======================', d)
 
 
         # 计算雅可比矩阵 J
@@ -235,12 +249,16 @@ def main():
 
             # theta_z = -np.ones([13,1])
             theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-            theta_z[-4:] =[ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
+            # theta_z[-4:] =[ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
+            theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   0.98164686]
             theta_z = np.reshape(np.array(theta_z),[13,1])
 
-            RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
-                                            [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
-                                            [-5.77950645e-03, -9.99957496e-01, -7.18357448e-03]])
+            # RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
+            #                                 [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
+            #                                 [-5.77950645e-03, -9.99957496e-01, -7.18357448e-03]])
+            RR = np.array([[-0.99884559,  0.02652412,  0.04004957],
+                                        [-0.04070438, -0.02462568, -0.99886772],
+                                        [-0.02550784, -0.99934481,  0.0256769 ]])# 0913true
             RR = RR.T
             f = 2340
             u00 = 753
@@ -248,9 +266,9 @@ def main():
             theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
                 [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
             theta_k = np.array([[0.0] for i in range(15)])
+            fix_random = [1.1,0.8,0.85,1.2,0.85,1.0,1.05,1.05,1.15,1.2,1.16,0.98,0.95,0.90,1.19]
             for i in range(15):
-                # theta_k[i,0] += random.uniform(-300,300)
-                theta_k[i,0] = theta_k0[i,0]*random.uniform(0.8,1.2)
+                theta_k[i,0] = theta_k0[i,0]*fix_random[i]
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
@@ -259,12 +277,9 @@ def main():
             # 计算视觉矩阵Js
             u = x_now[0]-u0
             v = x_now[1]-v0
-            z = 1 # =========================
+            z = actual_z # =========================
             Js = np.array([      [fx/z, 0, -u/z]     , [0, fy/z, -v/z]    ])
-            RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
-                                            [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
-                                            [-5.77950645e-03, -9.99957496e-01, -7.18357448e-03]]) # 相机相对于base的旋转矩阵,要转置成base相对于相机才对
-            Js = np.dot(Js,RR.T)
+            Js = np.dot(Js,RR)
             # print(Js)
             Js_inv = np.linalg.pinv(Js)
 
@@ -298,17 +313,19 @@ def main():
 
             log_theta_z.append(list(theta_z))
             log_z_hat.append(list(z_hat))
+            log_actual_z.append(actual_z)
 
             # recover Js_hat from theta_k
             Js_hat = np.array([[theta_k[0,0]-theta_k[6,0]*x[0,0]+theta_k[9,0], theta_k[1,0]-theta_k[7,0]*x[0,0]+theta_k[10,0], theta_k[2,0]-theta_k[8,0]*x[0,0]+theta_k[11,0]],\
                                                    [theta_k[3,0]-theta_k[6,0]*x[1,0]+theta_k[12,0], theta_k[4,0]-theta_k[7,0]*x[1,0]+theta_k[13,0], theta_k[5,0]-theta_k[8,0]*x[1,0]+theta_k[14,0]]])
             # print('Js_hat',Js_hat)
             Js_hat_inv = np.linalg.pinv(Js_hat)
-            Js_ref = Js*1
+            Js_ref = Js*actual_z
             # print('Js_ref',Js_ref)
 
             log_theta_k.append(list(theta_k))
             log_Js_hat.append(list(np.reshape(Js_hat,[-1,])))
+            log_Js_ref.append(list(np.reshape(Js_ref,[-1])))
             
 
             # update
@@ -375,6 +392,7 @@ def main():
     log_theta_k_array = np.array(log_theta_k)
     log_z_hat_array = np.array(log_z_hat)
     log_d_array = np.array(log_d)
+    log_actual_z_array = np.array(log_actual_z)
 
     np.save(current_path+ dir+'log_d.npy',log_d_array)
     np.save(current_path+ dir+'log_x.npy',log_x_array)
@@ -386,6 +404,7 @@ def main():
     np.save(current_path+dir+'log_theta_k.npy',log_theta_k_array)
     np.save(current_path+dir+'log_z_hat.npy',log_z_hat_array)
     np.save(current_path+dir+'log_Js_hat.npy',log_Js_hat)
+    np.save(current_path+dir+'log_actual_z.npy',log_actual_z_array)
 
     # task space velocity==============================================
     plt.figure(figsize=(30,20))
@@ -420,7 +439,7 @@ def main():
     # plt.title('vision space error')
     plt.xlabel('time (s)')
     plt.ylabel('error (pixel)')
-    plt.savefig('log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
+    plt.savefig(current_path+ dir+'log_x_t.jpg',bbox_inches='tight',dpi=fig.dpi,pad_inches=0.0)
 
     # intention=========================================================
     plt.figure()
@@ -482,11 +501,27 @@ def main():
     # z_hat===========================================
     plt.figure()
     plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]), np.reshape(log_z_hat_array,[-1,]),label = 'z_hat')
+    plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]), np.reshape(log_actual_z_array,[-1,]),label = 'z_actual')
     plt.legend()
     plt.title('z_hat')
     plt.xlabel('time (s)')
     plt.ylabel('depth (m)')
     plt.savefig(current_path+ dir+'z_hat.jpg')
+
+    # Js_hat========================================
+    
+    log_Js_hat_array = np.array(log_Js_hat)
+    log_Js_ref_array = np.array(log_Js_ref)
+    for j in range(6):
+        plt.figure()
+        lab = r'$\hat{J}_s('+str(j+1)+')$'
+        lab2 = r'$J_s('+str(j+1)+')$'
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_Js_hat_array[:,j],label = lab)
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_Js_ref_array[:,j],'--' ,label = lab2)
+        plt.xlabel('time (s)')
+        plt.title(r'elements of $\hat{J}_s$')
+        plt.legend()
+        plt.savefig(current_path+ dir+'log_Js_'+str(j+1)+'.jpg')
 
 if __name__=="__main__":
     main()

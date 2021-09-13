@@ -81,7 +81,7 @@ def get_jacobian_from_joint(urdfname,jointq,flag):
 def main():
     time.sleep(0.3)
 
-    dir = '/keyboard_adaptive/0913_fitted/'
+    dir = '/keyboard_adaptive/0913_fitted/comparison/'
     current_path = os.path.dirname(__file__)
 
     rospy.init_node("move_ur5_by_urscript")
@@ -108,6 +108,7 @@ def main():
     # initial_state=[-3.75,-89.27,-88.4,-90,90,1.34]# 单位是角度deg
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg
     initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
+    initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1-
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
     # camera intrinsic parameters
@@ -148,8 +149,8 @@ def main():
     # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
     L_z = 0.0003*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,6])
     L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])# ======================步长是调好的，不能再大了
-    # L_z = 0.000015*np.eye(13)
-    # L_k = 0.000015*np.eye(15)# ======================步长是调好的，不能再大了
+    L_z = 0.0000*np.eye(13)
+    L_k = 0.0000*np.eye(15)# ======================步长是调好的，不能再大了
 
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
