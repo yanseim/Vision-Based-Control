@@ -81,7 +81,7 @@ def get_jacobian_from_joint(urdfname,jointq,flag):
 def main():
     time.sleep(0.3)
 
-    dir = '/keyboard_adaptive/'
+    dir = '/keyboard_adaptive/0913_fitted/'
     current_path = os.path.dirname(__file__)
 
     rospy.init_node("move_ur5_by_urscript")
