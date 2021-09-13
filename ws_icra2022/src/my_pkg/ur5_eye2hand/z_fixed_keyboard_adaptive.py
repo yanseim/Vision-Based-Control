@@ -127,6 +127,7 @@ def main():
     log_actual_z = []
     log_theta_k = []
     log_Js_hat = []
+    log_Js_ref = []
     log_x = []
     log_d = []
     log_q = np.empty([6,0],float)
@@ -144,8 +145,8 @@ def main():
     
     Kp = 1*np.eye(2)
     Cd = np.eye(6)
-    L_z = 0.002
-    L_k = 0.0001*np.eye(4)# ======================步长是调好的，不能再大了
+    L_z = 0.004
+    L_k = 0.05*np.diag([7,1,1,7])# ======================步长是调好的，不能再大了
     # L_z = 0.000015*np.eye(13)
     # L_k = 0.000015*np.eye(15)# ======================步长是调好的，不能再大了
 
@@ -213,7 +214,8 @@ def main():
                                         [-0.02550784, -0.99934481,  0.0256769 ]])
             RR = RR.T
             # theta_k = 2340*np.array( [  [RR[0,0]] , [RR[0,1]] , [RR[1,0]] , [RR[1,1]] ]  )
-            theta_k = 2340*np.array( [  [RR[0,0]]  ,[RR[0,2]] , [RR[1,0]] , [RR[1,2]] ]  )
+            theta_k = 2400*np.array( [  [RR[0,0]]  ,[RR[0,2]] , [RR[1,0]] , [RR[1,2]] ]  )
+            theta_k[[1,2]]-=10
 
 
             print('theta_z initial state:',theta_z)
@@ -225,7 +227,8 @@ def main():
             u = x_now[0]-u0
             v = x_now[1]-v0
             z = 1.42 # =========================
-            Js = np.array([      [fx/z, 0.0, -u/z]     , [0.0, fy/z, -v/z]    ])
+            # Js = np.array([      [fx/z, 0.0, -u/z]     , [0.0, fy/z, -v/z]    ])# 这是z变化的情况
+            Js = np.array([      [fx/z, 0.0, 0.0]     , [0.0, fy/z, 0.0]    ])
             Js = np.dot(Js,RR)
             # print('Js is :',Js)
             Js_inv = np.linalg.pinv(Js)
@@ -269,6 +272,7 @@ def main():
 
             log_theta_k.append(theta_k)
             log_Js_hat.append(list(np.reshape(Js_hat,[-1,])))
+            log_Js_ref.append(list(np.reshape(Js_ref,[-1,])))
             
 
             # update
@@ -352,6 +356,8 @@ def main():
     np.save(current_path+dir+'log_z_hat.npy',log_z_hat_array)
     np.save(current_path+dir+'log_actual_z.npy',log_actual_z_array)
     np.save(current_path+dir+'log_Js_hat.npy',log_Js_hat)
+    np.save(current_path+dir+'log_Js_ref.npy',log_Js_ref)
+    # print(log_Js_hat)
 
     # task space velocity==============================================
     plt.figure(figsize=(30,20))
@@ -419,6 +425,22 @@ def main():
         plt.title(r'elements of $\hat \theta_k$')
         plt.legend()
     plt.savefig(current_path+ dir+'log_thetak.jpg')
+
+    # Js_hat========================================
+    
+    log_Js_hat_array = np.array(log_Js_hat)
+    log_Js_ref_array = np.array(log_Js_ref)
+    for j in range(6):
+        plt.figure()
+        lab = r'$\hat{J}_s('+str(j+1)+')$'
+        lab2 = r'$J_s('+str(j+1)+')$'
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_Js_hat_array[:,j],label = lab)
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_Js_ref_array[:,j],'--' ,label = lab2)
+        plt.xlabel('time (s)')
+        plt.title(r'elements of $\hat{J}_s$')
+        plt.legend()
+        plt.savefig(current_path+ dir+'log_Js_'+str(j+1)+'.jpg')
+
 
     # theta_z========================================
     plt.figure()

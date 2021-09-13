@@ -1,0 +1,11 @@
+    Kp = 1*np.eye(2)
+    Cd = np.eye(6)
+    L_z = 0.004
+    L_k = 0.05*np.diag([7,1,1,7])
+
+('theta_z initial state:', 0.2)
+('theta_k initial state:', array([[-2397.229416],
+       [  -71.218816],
+       [   53.657888],
+       [-2398.427544]]))
+
