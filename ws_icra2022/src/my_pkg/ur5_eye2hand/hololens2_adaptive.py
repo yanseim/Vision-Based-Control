@@ -160,16 +160,16 @@ def main():
     # Cd = np.eye(6)
     # L_z = 0.00001*np.eye(13)
     # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
-    Kp = 3*np.eye(2)
+    Kp = 2*np.eye(2)
     Cd = np.eye(6)
     # L_z = 0.00003*np.eye(13)
     # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
-    # L_z = 0.0003*np.diag([1,1,1,1,1,1,1,1,1,1,1,1,1.2])
-    # L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
+    L_z = 0.0003*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,3])
+    L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
     # L_z = 0.0000*np.diag([1,1,1,1,1,1,1,1,1,1,1,1,1.2])
     # L_k = 0.000*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
-    L_z = 0.0003*np.diag([1,1,1,3])
-    L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
+    # L_z = 0.0003*np.diag([1,1,1,3])
+    # L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
     q_last=ur_reader.now_ur_pos
@@ -248,12 +248,12 @@ def main():
             t_ready = t
 
             # # theta_z = -np.ones([13,1])
-            # theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-            # # theta_z[-4:] =[ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
+            theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+            theta_z[-4:] =[ 6.78457138e-01, -7.34604865e-01, -7.18357448e-03,  1.59173406e+00]
             # theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   0.98164686]
-            # theta_z = np.reshape(np.array(theta_z),[13,1])
-            theta_z =[ 0.04004957, -0.99886772,  0.0256769,   0.98164686]
-            theta_z = np.reshape(np.array(theta_z),[4,1])
+            theta_z = np.reshape(np.array(theta_z),[13,1])
+            # theta_z =[ 0.04004957, -0.99886772,  0.0256769,   0.98164686]
+            # theta_z = np.reshape(np.array(theta_z),[4,1])
 
             # RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
             #                                 [-6.78432812e-01,  9.19848654e-03, -7.34604865e-01],\
@@ -299,10 +299,10 @@ def main():
             # print(type(rdot))
 
             # 计算深度自适应矩阵
-            # Y_z = np.array([[xdot[0,0]*p[0,0], xdot[0,0]*p[1,0], xdot[0,0]*p[2,0], xdot[0,0]*p[0,1], xdot[0,0]*p[1,1], xdot[0,0]*p[2,1], xdot[0,0]*p[0,2], xdot[0,0]*p[1,2], xdot[0,0]*p[2,2], xdot[0,0]*p[0,3], xdot[0,0]*p[1,3], xdot[0,0]*p[2,3], xdot[0,0]],\
-            #     [xdot[1,0]*p[0,0], xdot[1,0]*p[1,0], xdot[1,0]*p[2,0], xdot[1,0]*p[0,1], xdot[1,0]*p[1,1], xdot[1,0]*p[2,1], xdot[1,0]*p[0,2], xdot[1,0]*p[1,2], xdot[1,0]*p[2,2], xdot[1,0]*p[0,3], xdot[1,0]*p[1,3], xdot[1,0]*p[2,3], xdot[1,0]]])
-            Y_z = np.array([[ xdot[0,0]*p[0,3], xdot[0,0]*p[1,3], xdot[0,0]*p[2,3], xdot[0,0]],\
-            [xdot[1,0]*p[0,3], xdot[1,0]*p[1,3], xdot[1,0]*p[2,3], xdot[1,0]]])
+            Y_z = np.array([[xdot[0,0]*p[0,0], xdot[0,0]*p[1,0], xdot[0,0]*p[2,0], xdot[0,0]*p[0,1], xdot[0,0]*p[1,1], xdot[0,0]*p[2,1], xdot[0,0]*p[0,2], xdot[0,0]*p[1,2], xdot[0,0]*p[2,2], xdot[0,0]*p[0,3], xdot[0,0]*p[1,3], xdot[0,0]*p[2,3], xdot[0,0]],\
+                [xdot[1,0]*p[0,0], xdot[1,0]*p[1,0], xdot[1,0]*p[2,0], xdot[1,0]*p[0,1], xdot[1,0]*p[1,1], xdot[1,0]*p[2,1], xdot[1,0]*p[0,2], xdot[1,0]*p[1,2], xdot[1,0]*p[2,2], xdot[1,0]*p[0,3], xdot[1,0]*p[1,3], xdot[1,0]*p[2,3], xdot[1,0]]])
+            # Y_z = np.array([[ xdot[0,0]*p[0,3], xdot[0,0]*p[1,3], xdot[0,0]*p[2,3], xdot[0,0]],\
+            # [xdot[1,0]*p[0,3], xdot[1,0]*p[1,3], xdot[1,0]*p[2,3], xdot[1,0]]])
             # print('Yz',Y_z)
             
             # 计算相机参数自适应矩阵
@@ -311,8 +311,8 @@ def main():
             # print('Yk',Y_k)
 
             # recover z_hat from theta_z
-            # z_hat = np.dot(np.array([p[0,0],  p[1,0],  p[2,0],  p[0,1],  p[1,1],  p[2,1],  p[0,2],  p[1,2],  p[2,2],  p[0,3],  p[1,3],  p[2,3], 1]), theta_z   )
-            z_hat = np.dot(np.array([p[0,3],  p[1,3],  p[2,3], 1]), theta_z   )
+            z_hat = np.dot(np.array([p[0,0],  p[1,0],  p[2,0],  p[0,1],  p[1,1],  p[2,1],  p[0,2],  p[1,2],  p[2,2],  p[0,3],  p[1,3],  p[2,3], 1]), theta_z   )
+            # z_hat = np.dot(np.array([p[0,3],  p[1,3],  p[2,3], 1]), theta_z   )
             # print('p',p)    
             # print('z',z_hat)
 
@@ -496,7 +496,7 @@ def main():
 
     # theta_z========================================
     plt.figure()
-    for j in range(4):
+    for j in range(np.shape(log_theta_z_array)[1]):
         lab = r'$\theta_z('+str(j+1)+')$'
         plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_theta_z_array[:,j]-log_theta_z_array[0,j],label = lab)
         plt.xlabel('time (s)')
