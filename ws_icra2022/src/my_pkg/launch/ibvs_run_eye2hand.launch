@@ -22,7 +22,7 @@
     <!-- <node pkg="my_pkg" name="ur_ibvs_node" type="keyboard_adaptive.py" output="screen" /> -->
     <!-- start record video -->
     <param name="name" value="point"/>
-    <node pkg = "my_pkg" name = "image_show_node" type="save_video.py" output="screen"/> 
+    <!-- <node pkg = "my_pkg" name = "image_show_node" type="save_video.py" output="screen"/>  -->
     
     
 </launch>
