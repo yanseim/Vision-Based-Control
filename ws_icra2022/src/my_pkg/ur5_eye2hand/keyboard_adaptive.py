@@ -126,6 +126,7 @@ def main():
     log_actual_z = []
     log_theta_k = []
     log_Js_hat = []
+    log_Js_ref = []
     log_x = []
     log_d = []
     log_q = np.empty([6,0],float)
@@ -143,8 +144,10 @@ def main():
     
     Kp = 2*np.eye(2)
     Cd = np.eye(6)
-    L_z = 0.0000*np.eye(13)
-    L_k = 0.0000*np.eye(15)# ======================步长是调好的，不能再大了
+    # L_z = 0.00003*np.eye(13)
+    # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
+    L_z = 0.0003*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,6])
+    L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])# ======================步长是调好的，不能再大了
     # L_z = 0.000015*np.eye(13)
     # L_k = 0.000015*np.eye(15)# ======================步长是调好的，不能再大了
 
@@ -175,7 +178,7 @@ def main():
         x = np.reshape(x,[2,1]) # x is an 2d array
         k_now = vision_reader.k_pos
         actual_z = vision_reader.actual_z
-        print('actual_z',actual_z)
+        # print('actual_z',actual_z)
 
         # k_now_h = hololens_reader.k_pos
         # d = hololens_reader.pos
@@ -183,7 +186,7 @@ def main():
         # 计算雅可比矩阵 J
         urdf =  current_path+"/../urdf/ur5.urdf"
         J,p = get_jacobian_from_joint(urdf,q_now,0)
-        print('p======================',p)
+        # print('p======================',p)
         J_inv = np.linalg.pinv(J)
         J_ori_inv = np.linalg.pinv(J[3:6,:]) # only compute orientation!!
         J_pos_inv = np.linalg.pinv(J[0:3,:])
@@ -207,7 +210,8 @@ def main():
             # theta_z = -np.ones([13,1])
             theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 
-            theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   1.38164686]
+            theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   1.38164686]# true
+            theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   0.88164686]
             theta_z = np.reshape(np.array(theta_z),[13,1])
 
             # RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
@@ -217,15 +221,15 @@ def main():
                                         [-0.04070438, -0.02462568, -0.99886772],
                                         [-0.02550784, -0.99934481,  0.0256769 ]])
             RR = RR.T
-            f = 2340
+            f = 2400
             u00 = 753
             v00 = 551
             theta_k0 = np.array([[f*RR[0,0]],[f*RR[0,1]],[f*RR[0,2]],[f*RR[1,0]],[f*RR[1,1]],[f*RR[1,2]],[RR[2,0]],[RR[2,1]],[RR[2,2]],\
                 [u00*RR[2,0]],[u00*RR[2,1]],[u00*RR[2,2]],[v00*RR[2,0]],[v00*RR[2,1]],[v00*RR[2,2]]])
             theta_k = np.array([[0.0] for i in range(15)])
-            fix_random = [1.1,0.8,0.85,0.9,0.95,1.0,1.05,1.1,1.15,1.2,1.16,0.98,0.81,0.97,1.19]
+            fix_random = [1.1,0.8,0.85,1.2,0.85,1.0,1.05,1.05,1.15,1.2,1.16,0.98,0.95,0.90,1.19]
             for i in range(15):
-                theta_k[i,0] = theta_k0[i,0]*1
+                theta_k[i,0] = theta_k0[i,0]*fix_random[i]
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
@@ -247,7 +251,7 @@ def main():
             # 末端位置
             r4 = np.dot(p, [[0],[0],[0],[1]])
             r = r4[0:3]
-            print('r is:::::::::::::::::::::::::::::::::::::::::::::::::::::',r)
+            # print('r is:::::::::::::::::::::::::::::::::::::::::::::::::::::',r)
 
             # 末端速度
             rdot = np.dot(J , np.reshape(qdot,[6,1]))# rdot是个matrix!   np.dot的输出是matrix
@@ -283,6 +287,7 @@ def main():
 
             log_theta_k.append(list(theta_k))
             log_Js_hat.append(list(np.reshape(Js_hat,[-1,])))
+            log_Js_ref.append(list(np.reshape(Js_ref,[-1,])))
             
 
             # update
@@ -291,6 +296,17 @@ def main():
             theta_z = theta_z+theta_z_dot
             theta_k_dot = 1/z_hat*np.dot(L_k, np.dot(Y_k.T, (x-dx)))/ros_freq
             theta_k = theta_k+theta_k_dot
+
+            print('=============================================================')
+            print(theta_k)
+            print('u0')
+            print(theta_k[9]/theta_k[6])
+            print(theta_k[10]/theta_k[7])
+            print(theta_k[11]/theta_k[8])
+            print('v0')
+            print(theta_k[12]/theta_k[6])
+            print(theta_k[13]/theta_k[7])
+            print(theta_k[14]/theta_k[8])
 
             # 计算ut=================================
             # truth
@@ -360,6 +376,7 @@ def main():
     np.save(current_path+dir+'log_z_hat.npy',log_z_hat_array)
     np.save(current_path+dir+'log_actual_z.npy',log_actual_z_array)
     np.save(current_path+dir+'log_Js_hat.npy',log_Js_hat)
+    np.save(current_path+dir+'log_Js_ref.npy',log_Js_ref)
 
     # task space velocity==============================================
     plt.figure(figsize=(30,20))
@@ -427,6 +444,21 @@ def main():
         plt.title(r'elements of $\hat \theta_k$')
         plt.legend()
     plt.savefig(current_path+ dir+'log_thetak.jpg')
+
+    # Js_hat========================================
+    
+    log_Js_hat_array = np.array(log_Js_hat)
+    log_Js_ref_array = np.array(log_Js_ref)
+    for j in range(6):
+        plt.figure()
+        lab = r'$\hat{J}_s('+str(j+1)+')$'
+        lab2 = r'$J_s('+str(j+1)+')$'
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_Js_hat_array[:,j],label = lab)
+        plt.plot(np.linspace(0,np.shape(log_qdot)[1]/ros_freq,np.shape(log_qdot)[1]),    log_Js_ref_array[:,j],'--' ,label = lab2)
+        plt.xlabel('time (s)')
+        plt.title(r'elements of $\hat{J}_s$')
+        plt.legend()
+        plt.savefig(current_path+ dir+'log_Js_'+str(j+1)+'.jpg')
 
     # theta_z========================================
     plt.figure()

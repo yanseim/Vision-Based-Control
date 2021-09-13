@@ -217,7 +217,6 @@ def main():
             theta_k = 2400*np.array( [  [RR[0,0]]  ,[RR[0,2]] , [RR[1,0]] , [RR[1,2]] ]  )
             theta_k[[1,2]]-=10
 
-
             print('theta_z initial state:',theta_z)
             print('theta_k initial state:',theta_k)
 
