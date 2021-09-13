@@ -2,6 +2,8 @@
 
     <!-- publish ee to camera calibration -->
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_camera_transform" 
-        args="-0.0625471537595 1.94487021425 0.321975427499 -0.00371802654668  0.701674398553 -0.711906247164 0.0287873226108 base camera_new"/>
+        args="-0.045916859857 1.39243926592 0.430532195263 -0.00507924798052  0.697951109878 -0.715742300609 0.0234820906146 base camera_new"/>
+     <node pkg="tf2_ros" type="static_transform_publisher" name="base_camera_transform2" 
+        args=" -0.058937003234 1.39174557642 0.43148660716 -0.0102350773076  0.697327183169 -0.716354143988 0.0216051659881 base camera_new_0913"/>
     
 </launch>

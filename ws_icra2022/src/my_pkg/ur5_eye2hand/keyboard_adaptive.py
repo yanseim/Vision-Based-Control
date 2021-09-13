@@ -81,7 +81,7 @@ def get_jacobian_from_joint(urdfname,jointq,flag):
 def main():
     time.sleep(0.3)
 
-    dir = '/keyboard_adaptive/0913_fitted/comparison/'
+    dir = '/keyboard_adaptive/0914_comparison/'
     current_path = os.path.dirname(__file__)
 
     rospy.init_node("move_ur5_by_urscript")
@@ -109,6 +109,7 @@ def main():
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg
     initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
     initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1-
+    initial_state=[101.62,-143.69, -36.4, -22.64, 123.27, 146.86]# 0913夜12点
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
     # camera intrinsic parameters
@@ -149,9 +150,10 @@ def main():
     # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
     L_z = 0.0003*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,6])
     L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])# ======================步长是调好的，不能再大了
-    L_z = 0.0000*np.eye(13)
-    L_k = 0.0000*np.eye(15)# ======================步长是调好的，不能再大了
-
+    # L_z = 0.0000*np.eye(13)
+    # L_k = 0.0000*np.eye(15)# ======================步长是调好的，不能再大了
+    L_z = 0.000*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,6])
+    L_k = 0.00*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
 
     time.sleep(0.3)# wait for a short time otherwise q_last is empty
     q_last=ur_reader.now_ur_pos
@@ -212,7 +214,7 @@ def main():
             theta_z = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 
             theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   1.38164686]# true
-            theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   0.88164686]
+            theta_z[-4:] =[ 0.04004957, -0.99886772,  0.0256769,   0.98164686]
             theta_z = np.reshape(np.array(theta_z),[13,1])
 
             # RR = np.array([[-7.34639719e-01, -6.27919077e-04,  6.78457138e-01],\
