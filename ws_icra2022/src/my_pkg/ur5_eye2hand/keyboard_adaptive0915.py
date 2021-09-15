@@ -113,7 +113,7 @@ def main():
     initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
     initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1-
     initial_state=[101.62,-143.69, -36.4, -22.64, 123.27, 146.86]# 0913夜12点
-    # initial_state=[107.01,-150.55, -27.21, -10.72, 52.87, 140.32]# 0915晚上
+    initial_state=[105.97,-142.85, -41.12, -22.64, 44.01, 146.78]# 0913夜12点
     initial_state=change_angle_to_pi(initial_state)# 单位变成弧度rad
 
     # camera intrinsic parameters
