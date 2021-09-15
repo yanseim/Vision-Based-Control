@@ -92,7 +92,7 @@ def main():
     time.sleep(0.8)
 
     current_path = os.path.dirname(__file__)    
-    dir = '/hololens2_adaptive/step0/'
+    dir = '/hololens2_adaptive/0915_video/'
     urdf =  current_path+"/../urdf/ur5.urdf"
 
     rospy.init_node("move_ur5_by_urscript")
@@ -169,6 +169,7 @@ def main():
     # L_z = 0.00003*np.eye(13)
     # L_k = 0.00001*np.eye(15)# ======================步长是调好的，不能再大了
     L_z = 0.0003*np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,1,1,1,3])
+    L_z = 0.0003*np.diag([0,0,0,0,0,0,0,0,0,1,1,1,3])
     L_k = 0.001*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
     # L_z = 0.0000*np.diag([1,1,1,1,1,1,1,1,1,1,1,1,1.2])
     # L_k = 0.000*np.diag([1000,1000,1000,1000,1000,1000,0,0,0,10,10,10,10,10,10])
