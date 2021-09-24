@@ -1,11 +1,11 @@
-0827晚上转到eye to hand
+# 总结
 
-跑了convert程序之后的
-cbR
-[[0.02179647]
- [0.46575779]
- [1.38164686]]
-[[-0.99884559 -0.04070438 -0.02550784  0.02179647]
- [ 0.02652412 -0.02462568 -0.99934481  0.46575779]
- [ 0.04004957 -0.99886772  0.0256769   1.38164686]
- [ 0.          0.          0.          0.        ]]
+* 0827晚上转到eye to hand
+* 自适应的一个小trick: 让\hat\theta_k中的r31 r32 r33三项尽量准确（初值近+更新率小），控制效果就好
+
+* 最终用到的有
+  * keyboard_adaptive0915.py 读取hololens2_adaptive/0914-final-2/log_d.npy跑出深度
+  * hololens2_adaptive.py 数据在hololens2_adaptive/0914-final-2
+  * hololens2_adaptive_circle.py 数据在hololens2_adaptive_circle
+  * keyboard_adaptive_simplified.py原本认为\theta_z需要用13个元素，后来经翔哥提醒发现只需要4个。
+

@@ -104,8 +104,6 @@ def main():
     pos2_flag = 0
     flag_has_sent = 0
     flag_initialized = 0
-    # initial_state=[0,-1.57,0,0,3.14,0.25]
-    # initial_state=[-3.75,-89.27,-88.4,-90,90,1.34]# 单位是角度deg
     initial_state=[155.93,-123.81, -75.73, 1.97, 68.68, 147.01]# 单位是角度deg
     initial_state=[115.22,-111.13, -76.87, 4.25, 68.65, 146.93]# 0907挪位置了
     initial_state=[102.73,-135.07, -52.55, -29.65, 68.61, 146.93]# 0908 experiment1-
