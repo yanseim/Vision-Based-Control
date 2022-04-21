@@ -47,10 +47,22 @@ catkin_make
 ## Packages
 
 all the packages are in /Vision-Based-Control/ws_icra2022/src
-* **aruco_ros**: for aruco
-* **dragandbot_common** and **pylon-ros-camera**: drivers for pylon camera
-* **fmauch_universal_robot** and **Universal_Robots_ROS_Driver**: drivers for UR5
-* **easy_handeye**: for eye hand calibration.`roslaunch easy_handeye ur5_basler_calibration.launch`
+* **aruco_ros**: for aruco. cloned from [pal-robotics/aruco_ros](https://github.com/pal-robotics/aruco_ros/tree/melodic-devel), without modification.
+* **dragandbot_common**: a driver for pylon camera, cloned from [dragandbot/dragandbot_common](https://github.com/dragandbot/dragandbot_common), no modification.
+* **pylon-ros-camera**: a driver for pylon camera cloned from [basler/pylon-ros-camera](https://github.com/basler/pylon-ros-camera), where i modified ``default.yaml`` for calibration according to the README in it.
+* **fmauch_universal_robot** and **Universal_Robots_ROS_Driver**: drivers for UR5, cloned from [UniversalRobots/Universal_Robots_ROS_Driver](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver)**, no modification.
+* **easy_handeye**: for eye hand calibration. i modified `ur5_basler_calibration.launch`
 * **ROS-TCP-Endpoint**: for communication between Unity and ROS
 * **my_pkg**: main control code
 * **tcst_pkg**: control code we refered to. from [Musyue/tcst_pkg](https://github.com/Musyue/tcst_pkg)
+
+## Usage
+
+```
+cd ws_icra2022
+source devel/setup.bash
+roslaunch my_pkg ur5_bringup.launch # for UR5
+roslaunch ros_tcp_endpoint endpoint.launch # for hololens 2
+roslaunch my_pkg ibvs_run_eye2hand.launch # for control
+```
+
