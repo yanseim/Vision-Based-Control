@@ -47,10 +47,10 @@ catkin_make
 ## Packages
 
 all the packages are in /Vision-Based-Control/ws_icra2022/src
-* **aruco_ros**: for aruco. cloned from [pal-robotics/aruco_ros](https://github.com/pal-robotics/aruco_ros/tree/melodic-devel), without modification.
+* **aruco_ros**: for aruco. cloned from [pal-robotics/aruco_ros](https://github.com/pal-robotics/aruco_ros/tree/melodic-devel), no modification.
 * **dragandbot_common**: a driver for pylon camera, cloned from [dragandbot/dragandbot_common](https://github.com/dragandbot/dragandbot_common), no modification.
 * **pylon-ros-camera**: a driver for pylon camera cloned from [basler/pylon-ros-camera](https://github.com/basler/pylon-ros-camera), where i modified ``default.yaml`` for calibration according to the README in it.
-* **fmauch_universal_robot** and **Universal_Robots_ROS_Driver**: drivers for UR5, cloned from [UniversalRobots/Universal_Robots_ROS_Driver](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver)**, no modification.
+* **fmauch_universal_robot** and **Universal_Robots_ROS_Driver**: drivers for UR5, cloned from [UniversalRobots/Universal_Robots_ROS_Driver](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver), no modification. ----*submodule*
 * **easy_handeye**: for eye hand calibration. i modified `ur5_basler_calibration.launch`
 * **ROS-TCP-Endpoint**: for communication between Unity and ROS
 * **my_pkg**: main control code
