@@ -1,5 +1,5 @@
 # Vision-Based-Control
-code for "Adaptive  Vision-Based  Control  of  Redundant  Robots  with  Null-SpaceImpedance  for  Human-Robot  Collaboration"
+code for "Adaptive  Vision-Based  Control  of  Redundant  Robots  with  Null-Space Impedance  for  Human-Robot  Collaboration", ICRA 2022
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ all the packages are in /Vision-Based-Control/ws_icra2022/src
 * **easy_handeye**: for eye hand calibration. i modified `ur5_basler_calibration.launch`
 * **ROS-TCP-Endpoint**: for communication between Unity and ROS
 * **my_pkg**: main control code
-* **tcst_pkg**: control code we refered to. from [Musyue/tcst_pkg](https://github.com/Musyue/tcst_pkg)
+* **tcst_pkg**: control code we refered to. from [Musyue/tcst_pkg](https://github.com/Musyue/tcst_pkg). ----*submodule*
 
 ## Usage
 
