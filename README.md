@@ -1,6 +1,18 @@
 # Vision-Based-Control
 code for "Adaptive  Vision-Based  Control  of  Redundant  Robots  with  Null-Space Impedance  for  Human-Robot  Collaboration", ICRA 2022
 
+If you find our method useful in your research, please consider citing:
+
+```
+@INPROCEEDINGS{Yan2022Adaptive,
+  author={Yan, Xiangjie and Chen, Chen and Li, Xiang},
+  booktitle={2022 International Conference on Robotics and Automation (ICRA)}, 
+  title={Adaptive Vision-Based Control of Redundant Robots with Null-Space Interaction for Human-Robot Collaboration}, 
+  year={2022},
+  pages={2803-2809},
+  doi={10.1109/ICRA46639.2022.9812218}}
+```
+
 ## Prerequisites
 
 * Ubuntu 18.04
