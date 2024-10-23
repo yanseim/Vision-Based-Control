@@ -56,6 +56,10 @@ cd <YOUR_PATH>/Vision-Based-Control/ws_icra2022
 catkin_make
 ```
 
+## HoloLens2 Deployment
+
+Please refer to this [readme file](https://github.com/yanseim/Vision-Based-Control/tree/main/HoloLens2_Interface).
+
 ## Packages
 
 all the packages are in /Vision-Based-Control/ws_icra2022/src
